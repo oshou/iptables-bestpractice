@@ -200,6 +200,7 @@ fi
 # **必要に応じてアンコメントアウト**
 # iptables -A INPUT -p tcp -m multiport --dports $HTTP -j ACCEPT
 
+
 ##################################################################################
 # SSH締め出し回避策
 # * Ctrl+C押下でiptables設定確定
