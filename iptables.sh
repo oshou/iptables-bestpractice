@@ -27,6 +27,14 @@ ANY="0.0.0.0/0"
 #  "xxx.xxx.xxx.xxx"
 # )
 
+# 制限付き許可するホスト(配列)
+# **必要に応じてアンコメントアウト**
+# LIMITED_ALLOW_HOSTS=(
+#  "xxx.xxx.xxx.xxx"
+#  "xxx.xxx.xxx.xxx"
+#  "xxx.xxx.xxx.xxx"
+# )
+
 # アクセス拒否ホスト(配列)
 # **必要に応じてアンコメントアウト**
 # DENY_HOSTS=(
@@ -39,7 +47,7 @@ ANY="0.0.0.0/0"
 ######################################################
 # (要定義)Port定義
 ######################################################
-SSH=22
+SSH=22,10022
 FTP=20,21
 DNS=53
 SMTP=25,465,587
@@ -93,10 +101,17 @@ iptables -P FORWARD DROP
 
 
 ##################################################################################
-# 信頼できるホストの許可
+# 無条件許可する通信の設定
 ##################################################################################
+
 # ループバックアドレスの許可
 iptables -A INPUT -i lo -j ACCEPT
+
+# (ALL-ACCESS) 確立済のパケット通信は全て許可
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# (ALL-ACCESS) ICMP
+iptables -A INPUT -p icmp -j ACCEPT
 
 # ローカルネットワークの許可
 if [ "$LOCAL_NETS[@]" != "" ]
@@ -116,12 +131,13 @@ then
   done
 fi
 
-# 確立済のパケット通信は全て許可
-iptables -A INPUT -p tcp -m state --state ESTABLISHED,RELATED -j ACCEPT
+# (ALL-ACCESS) HTTP,HTTPS
+# **必要に応じてアンコメントアウト**
+# iptables -A INPUT -p tcp -m multiport --dports $HTTP -j ACCEPT
 
 
 ##################################################################################
-# 信頼できないホストの拒否
+# 無条件拒否する通信の設定
 ##################################################################################
 # アクセス拒否ホストの拒否設定
 if [ "$DENY_HOSTS[@]" != ""  ]
@@ -132,6 +148,7 @@ then
     iptables -A INPUT -s $deny_host -j DROP
   done
 fi
+
 
 
 ##################################################################################
@@ -226,7 +243,7 @@ iptables -A INPUT -p tcp -m multiport --dports $HTTP -j HTTP_DOS
 # * 接続試行回数のカウントは30分置きにリセットされる
 ##################################################################################
 iptables -N SSH_BRUTE_FORCE
-iptables -A SSH_BRUTE_FORCE -p tcp -m multiport --dports $SSH \
+iptables -A SSH_BRUTE_FORCE -p tcp -s $limited_allow_host -m multiport --dports $SSH \
     -m hashlimit                        \
     --hashlimit 6/m                     \
     --hashlimit-burst 10                \
@@ -280,36 +297,16 @@ iptables -A INPUT -d 224.0.0.1 -j DROP
 
 
 ##################################################################################
-# 全ホストからの入力許可 ( ANY -> SELF )
+# 制限付き許可する通信の設定
 ##################################################################################
-
-# ICMP
-iptables -A INPUT -p icmp -j ACCEPT
-
-# SSH
-# **必要に応じてコメントアウト**
-iptables -A INPUT -p tcp -m multiport --dports $SSH -j ACCEPT
-
-# FTP
-# iptables -A INPUT -p tcp -m multiport --dports $FTP -j ACCEPT
-
-# HTTP,HTTPS
-# **必要に応じてアンコメントアウト**
-# iptables -A INPUT -p tcp -m multiport --dports $HTTP -j ACCEPT
-
-# DNS
-# **必要に応じてアンコメントアウト**
-# iptables -A INPUT -p tcp -m multiport --dports $DNS -j ACCEPT
-
-# SMTP
-# iptables -A INPUT -p tcp -m multiport --dports $SMTP -j ACCEPT
-
-# POP3
-# iptables -A INPUT -p tcp -m multiport --dports $POP3 -j ACCEPT
-
-# IMAP
-# iptables -A INPUT -p tcp -m multiport --dports $IMAP -j ACCEPT
-
+# アクセス許可ホストの許可設定
+if [ "$LIMITED_ALLOW_HOSTS[@]" != "" ]
+then
+  for limited_allow_host in ${LIMITED_ALLOW_HOSTS[@]}
+  do
+    iptables -A INPUT -p tcp -s $limited_allow_host -j ACCEPT
+  done
+fi
 
 ##################################################################################
 # その他ホストはロギングして破棄
