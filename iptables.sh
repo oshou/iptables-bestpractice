@@ -126,10 +126,10 @@ iptables -A INPUT -p tcp -m state --state ESTABLISHED,RELATED -j ACCEPT
 # アクセス拒否ホストの拒否設定
 if [ "$DENY_HOSTS[@]" != ""  ]
 then
-  for host in ${DENY_HOSTS[@]}
+  for deny_host in ${DENY_HOSTS[@]}
   do
-    iptables -A INPUT -s $ip -m limit --limit 1/s -j LOG --log-prefix "deny_hosts: "
-    iptables -A INPUT -s $ip -j DROP
+    iptables -A INPUT -s $deny_host -m limit --limit 1/s -j LOG --log-prefix "deny_hosts: "
+    iptables -A INPUT -s $deny_host -j DROP
   done
 fi
 
@@ -228,11 +228,11 @@ iptables -A INPUT -p tcp -m multiport --dports $HTTP -j HTTP_DOS
 iptables -N SSH_BRUTE_FORCE
 iptables -A SSH_BRUTE_FORCE -p tcp -m multiport --dports $SSH \
     -m hashlimit                        \
-    --hashlimit 6/minute                \
+    --hashlimit 6/m                     \
     --hashlimit-burst 10                \
-    --hashlimit-htable-expire 1800000   \
+    --hashlimit-htable-expire 300000    \
     --hashlimit-mode srcip              \
-    --hashlimit-name t_SSH_BRUTE_FORCE  \
+    --hashlimit-name t_SSH_BF           \
     -j RETURN
 iptables -A SSH_BRUTE_FORCE -j LOG --log-prefix "ssh_brute_force: "
 iptables -A SSH_BRUTE_FORCE -j REJECT
@@ -250,11 +250,11 @@ iptables -A INPUT -p tcp -m multiport --dports $SSH -j SSH_BRUTE_FORCE
 iptables -N FTP_BRUTE_FORCE
 iptables -A FTP_BRUTE_FORCE -p tcp -m multiport --dports $FTP \
     -m hashlimit                        \
-    --hashlimit 6/minute                \
+    --hashlimit 6/m                     \
     --hashlimit-burst 10                \
     --hashlimit-htable-expire 1800000   \
     --hashlimit-mode srcip              \
-    --hashlimit-name t_FTP_BRUTE_FORCE  \
+    --hashlimit-name t_FTP_BF           \
     -j RETURN
 
 iptables -A FTP_BRUTE_FORCE -j LOG --log-prefix "ftp_brute_force: "
@@ -321,12 +321,12 @@ iptables -A INPUT -j DROP
 ##################################################################################
 # SSH締め出し回避策
 # * Ctrl+C押下でiptables設定確定
-# * Ctrl+C押下しなければ60秒後に設定前の状態へ自動でリセットされる
+# * Ctrl+C押下しなければ30秒後に設定前の状態へ自動でリセットされる
 ##################################################################################
 trap `finalize && exit 0`
 echo "In 60 seconds iptables will be automatically reset."
 echo "Don't forget to test new SSH connection!"
 echo "If there is no problem then press Ctrl-C to finish."
-sleep 60
+sleep 30
 echo "rollback..."
 initialize
