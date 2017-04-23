@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##################################################################################
-# iptablesパス定義
+# PATH定義
 ##################################################################################
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 
@@ -125,10 +125,12 @@ iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
 # DNSサーバとの通信
 if [ "$DNS_SERVER[@]" != "" ]
 then
-  for nameserver in ${NAME_SERVER[@]}
+  for dnsserver in ${NAME_SERVER[@]}
   do
-    iptables -A INPUT -s $nameserver -p udp -m multiport --dports $DNS -j ACCEPT
-    iptables -A FORWARD -s $nameserver -p udp -m multiport --dports $DNS -j ACCEPT
+    iptables -A INPUT -s $dnsserver -p udp -m multiport --dports $DNS -j ACCEPT
+    iptables -A FORWARD -s $dnsserver -p udp -m multiport --dports $DNS -j ACCEPT
+    iptables -A FORWARD -d $dnsserver -p udp -m multiport --dports $DNS -j ACCEPT
+    echo "DNS-SERVER: $dnsserver"
   done
 fi
 
@@ -139,6 +141,8 @@ then
   do
     iptables -A INPUT -s $ntpserver -p udp -m multiport --dports $NTP -j ACCEPT
     iptables -A FORWARD -s $ntpserver -p udp -m multiport --dports $NTP -j ACCEPT
+    iptables -A FORWARD -d $ntpserver -p udp -m multiport --dports $NTP -j ACCEPT
+    echo "NTP-SERVER: $ntpserver"
   done
 fi
 
@@ -151,13 +155,13 @@ then
   for local_net in ${LOCAL_NETS[@]}
   do
     iptables -A INPUT -p tcp -s $local_net -m multiport --dport $SSH \
-        -m hashlimit                        \
-        --hashlimit 6/m                     \
-        --hashlimit-burst 10                \
-        --hashlimit-htable-expire 300000    \
-        --hashlimit-mode srcip              \
-        --hashlimit-name t_SSH_BF           \
- 	      -j ACCEPT
+      -m hashlimit                        \
+      --hashlimit 6/m                     \
+      --hashlimit-burst 10                \
+      --hashlimit-htable-expire 300000    \
+      --hashlimit-mode srcip              \
+      --hashlimit-name t_SSH_BF           \
+ 	    -j ACCEPT
     iptables -A INPUT -p tcp -s $local_net -m multiport ! --dport $SSH -j ACCEPT
   done
 fi
@@ -168,13 +172,13 @@ then
   for white_list_host in ${WHITE_LIST[@]}
   do
     iptables -A INPUT -p tcp -s $white_list_host -m multiport --dport $SSH \
-        -m hashlimit                        \
-        --hashlimit 6/m                     \
-        --hashlimit-burst 10                \
-        --hashlimit-htable-expire 300000    \
-        --hashlimit-mode srcip              \
-        --hashlimit-name t_SSH_BF           \
-       	-j ACCEPT
+      -m hashlimit                        \
+      --hashlimit 6/m                     \
+      --hashlimit-burst 10                \
+      --hashlimit-htable-expire 300000    \
+      --hashlimit-mode srcip              \
+      --hashlimit-name t_SSH_BF           \
+      -j ACCEPT
     iptables -A INPUT -p tcp -s $white_list_host -m multiport ! --dport $SSH -j ACCEPT
   done
 fi
