@@ -154,7 +154,7 @@ if [ "$LOCAL_NETS[@]" != "" ]
 then
   for local_net in ${LOCAL_NETS[@]}
   do
-    iptables -A INPUT -p tcp -s $local_net -m multiport --dport $SSH \
+    iptables -A INPUT -p tcp -s $local_net -m multiport --dports $SSH \
       -m hashlimit                        \
       --hashlimit 6/m                     \
       --hashlimit-burst 10                \
@@ -162,7 +162,7 @@ then
       --hashlimit-mode srcip              \
       --hashlimit-name t_SSH_BF           \
  	    -j ACCEPT
-    iptables -A INPUT -p tcp -s $local_net -m multiport ! --dport $SSH -j ACCEPT
+    iptables -A INPUT -p tcp -s $local_net -m multiport ! --dports $SSH -j ACCEPT
   done
 fi
 
@@ -171,7 +171,7 @@ if [ "$WHITE_LIST[@]" != "" ]
 then
   for white_list_host in ${WHITE_LIST[@]}
   do
-    iptables -A INPUT -p tcp -s $white_list_host -m multiport --dport $SSH \
+    iptables -A INPUT -p tcp -s $white_list_host -m multiport --dports $SSH \
       -m hashlimit                        \
       --hashlimit 6/m                     \
       --hashlimit-burst 10                \
@@ -179,7 +179,7 @@ then
       --hashlimit-mode srcip              \
       --hashlimit-name t_SSH_BF           \
       -j ACCEPT
-    iptables -A INPUT -p tcp -s $white_list_host -m multiport ! --dport $SSH -j ACCEPT
+    iptables -A INPUT -p tcp -s $white_list_host -m multiport ! --dports $SSH -j ACCEPT
   done
 fi
 
