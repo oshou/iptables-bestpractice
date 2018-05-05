@@ -13,7 +13,7 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 #--------------------------------------------------------------------------------#
 # Allowed IP                                                                     #
 #--------------------------------------------------------------------------------#
-# ex) allow ssh access server, monitoring server...
+# ex) allow all port
 LOCAL_NETS=(
   "xxx.xxx.xxx.xxx/xx"
   "xxx.xxx.xxx.xxx/xx"
